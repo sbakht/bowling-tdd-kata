@@ -1,6 +1,6 @@
 function Game(options) {
   this.options = $.extend({
-    inProgress: false
+    completed: true
   }, options);
 
   if(this.options.winner) {
@@ -8,7 +8,7 @@ function Game(options) {
   }
 
   this.getWinner = function() {
-    if(this.options.inProgress) {
+    if(this.options.completed == false) {
       throw new Error("Game is currently in progress");
     }
     return this.options.winner || calculateWinner.call(this);
@@ -19,7 +19,7 @@ function Game(options) {
   }
 
   function calculateWinner() {
-    if(this.options.inProgress) {
+    if(this.options.completed == false) {
       throw new Error("Game is currently in progress");
     }
     var winner = this.options.players[0];
@@ -71,6 +71,32 @@ function Player(name) {
   }
 }
 
+function GameLogs() {
+  this.completedGames = [];
+  this.inProgressGames = [];
+
+  this.numGames = function() {
+    return this.completedGames.length + this.inProgressGames.length;
+  }
+
+  this.add = function(game) {
+    if(game.options.completed) {
+      this.completedGames.push(game);
+    }else{
+      this.inProgressGames.push(game);
+    }
+  }
+
+  this.numCompletedGames = function() {
+    return this.completedGames.length;
+  }
+
+  this.numInProgressGames = function() {
+    return this.inProgressGames.length;
+  }
+
+}
+
 describe("Winner", function() {
   var player;
   var game;
@@ -78,12 +104,17 @@ describe("Winner", function() {
   beforeEach(function() {
     player1 = new Player("Bob");
     player2 = new Player("Steve");
-    game = new Game({players: [{player: player1 , score: 10}, {player: player2, score: 5}]});
+    game = new Game({players: [{player: player1 , score: 10}, {player: new Player("Ashe"), score: 3}, {player: player2, score: 5}]});
   });
 
   it("should create a game", function() {
     expect(game).toBeDefined();
   });
+
+  it("games are considered completed by defualt", function() {
+    expect(game.options.completed).toBeTruthy();
+  });
+
 
   it("should return the first player", function() {
     expect(game.getPlayer(0).name).toBe("Bob");
@@ -99,7 +130,7 @@ describe("Winner", function() {
   });
 
   it("should throw an error when trying to get winner while game is in progress", function() {
-    game = new Game({inProgress: true});
+    game = new Game({completed: false});
     expect(function() {game.getWinner() }).toThrowError("Game is currently in progress");
   });
 
@@ -132,35 +163,76 @@ describe("Winner", function() {
   });
 
   it("player should have 2 wins from 2 different games", function() {
-    var game2 = new Game({players: [{player: player1 , score: 10}, {player: new Player("Ashe"), score: 3}, {player: player2, score: 5}]});
+    var game2 = new Game({players: [{player: player1 , score: 4}, {player: player2, score: 1}]});
     game.getWinner();
     game2.getWinner();
     expect(player1.wins).toBe(2);
   });
 
   it("should return player in first place", function() {
-    game = new Game({players: [{player: player1 , score: 10}, {player: new Player("Ashe"), score: 3}, {player: player2, score: 5}]});
     expect(game.getFirstPlace().name).toBe("Bob");
   });
 
   it("should return player in 2nd place", function() {
-    game = new Game({players: [{player: player1 , score: 10}, {player: new Player("Ashe"), score: 3}, {player: player2, score: 5}]});
     expect(game.getRanking(1).name).toBe("Steve");
   });
 
   it("should return player in last place", function() {
-    game = new Game({players: [{player: player1 , score: 10}, {player: new Player("Ashe"), score: 3}, {player: player2, score: 5}]});
     expect(game.getLastPlace().name).toBe("Ashe");
   });
 
   it("should return player currently in first place while game is in progress", function() {
-    game = new Game({inProgress: true, players: [{player: player1 , score: 10}, {player: new Player("Ashe"), score: 3}, {player: player2, score: 5}]});
+    game.options.completed = true;
     expect(game.getFirstPlace().name).toBe("Bob");
   });
 
   it("should return number of players", function() {
-    game = new Game({inProgress: true, players: [{player: player1 , score: 10}, {player: new Player("Ashe"), score: 3}, {player: player2, score: 5}]});
     expect(game.numPlayers()).toBe(3);
+  });
+
+  it("should return number of players", function() {
+    expect(game.numPlayers()).toBe(3);
+  });
+
+});
+
+describe("Game Logs", function() {
+  var player;
+  var game;
+  var gameLogs;
+
+  beforeEach(function() {
+    gameLogs = new GameLogs();
+    player1 = new Player("Bob");
+    player2 = new Player("Steve");
+    game = new Game({completed: false, players: [{player: player1 , score: 10}, {player: new Player("Ashe"), score: 3}, {player: player2, score: 5}]});
+  });
+
+  it("should be empty by default", function() {
+    expect(gameLogs.numGames()).toBe(0);
+  });
+
+  it("should hold 2 games (1 completed and 1 in progress)", function() {
+    gameLogs.add(game);
+    gameLogs.add(new Game());
+    expect(gameLogs.numGames()).toBe(2);
+  });
+
+  it("should hold 1 in progress games", function() {
+    gameLogs.add(game);
+    expect(gameLogs.numInProgressGames()).toBe(1);
+  });
+
+  it("should hold 0 completed games", function() {
+    gameLogs.add(game);
+    expect(gameLogs.numCompletedGames()).toBe(0);
+    expect(gameLogs.numGames()).toBe(1);
+  });
+
+  it("should hold 1 completed games", function() {
+    gameLogs.add(new Game());
+    expect(gameLogs.numCompletedGames()).toBe(1);
+    expect(gameLogs.numGames()).toBe(1);
   });
 
 });
