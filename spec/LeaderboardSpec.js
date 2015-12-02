@@ -1,102 +1,3 @@
-function Game(options) {
-  this.options = $.extend({
-    completed: true
-  }, options);
-
-  if(this.options.winner) {
-    this.options.winner.win();
-  }
-
-  this.getWinner = function() {
-    if(this.options.completed == false) {
-      throw new Error("Game is currently in progress");
-    }
-    return this.options.winner || calculateWinner.call(this);
-  }
-
-  this.getPlayer = function(i) {
-    return this.options.players[i].player;
-  }
-
-  function calculateWinner() {
-    if(this.options.completed == false) {
-      throw new Error("Game is currently in progress");
-    }
-    var winner = this.options.players[0];
-    for(var i = 0; i < this.options.players.length; i++) {
-      if(this.options.players[i].score  > winner.score ) {
-        winner = this.options.players[i];
-      }
-    }
-    winner.player.win();
-    this.options.winner = winner.player;
-    return winner.player;
-  }
-  
-  this.getScore = function(name) {
-    for(var i = 0; i < this.options.players.length; i++) {
-      if(this.options.players[i].player.name === name) {
-        return this.options.players[i].score.getTotalPoints();
-      }
-    }
-    throw new Error('That player is not playing in this game');
-  }
-
-  this.getRanking = function(rank) {
-    this.options.players.sort(function(a, b) {
-      return b.score.getTotalPoints() - a.score.getTotalPoints();
-    });
-    return this.options.players[rank].player;
-  }
-
-  this.getFirstPlace = function() {
-    return this.getRanking(0);
-  }
-
-  this.getLastPlace = function() {
-    return this.getRanking(this.options.players.length - 1);
-  }
-
-  this.numPlayers = function() {
-    return this.options.players.length;
-  }
-
-}
-
-function Player(name) {
-  this.name = name;
-  this.wins = 0;
-  this.win = function() {
-    this.wins++;
-  }
-}
-
-function GameLogs() {
-  this.completedGames = [];
-  this.inProgressGames = [];
-
-  this.numGames = function() {
-    return this.completedGames.length + this.inProgressGames.length;
-  }
-
-  this.add = function(game) {
-    if(game.options.completed) {
-      this.completedGames.push(game);
-    }else{
-      this.inProgressGames.push(game);
-    }
-  }
-
-  this.numCompletedGames = function() {
-    return this.completedGames.length;
-  }
-
-  this.numInProgressGames = function() {
-    return this.inProgressGames.length;
-  }
-
-}
-
 describe("Winner", function() {
   var player;
   var game;
@@ -109,7 +10,7 @@ describe("Winner", function() {
     secondPlaceScore = new Score({ data: [new Turn(2,0), new Turn(5,5), new Turn(10,0), new Turn(5,2), new Turn(1,1), new Turn(3,6), new Turn(2,2), new Turn(10,0), new Turn(9,1), new Turn(8,0)]});
     thirdPlaceScore = new Score({ data: [new Turn(0,0), new Turn(5,5), new Turn(10,0), new Turn(5,2), new Turn(1,1), new Turn(3,6), new Turn(2,2), new Turn(10,0), new Turn(9,1), new Turn(8,0)]});
     game = new Game({players: [{player: player1 , score: winningScore}, {player: new Player("Ashe"), score: thirdPlaceScore}, {player: player2, score: secondPlaceScore}]});
-    game2 = new Game({players: [{player: player1 , score: new Score({ data: [4]})}, {player: player2, score: new Score({ data: [1]})}]});
+    game2 = new Game({players: [{player: player1 , score: winningScore}, {player: player2, score: secondPlaceScore}]});
   });
 
   it("should create a game", function() {
@@ -120,9 +21,12 @@ describe("Winner", function() {
     expect(game.options.completed).toBeTruthy();
   });
 
-
   it("should return the first player", function() {
     expect(game.getPlayer(0).name).toBe("Bob");
+  });
+
+  it("should return all the players", function() {
+    expect(game.getPlayers().length).toBe(3);
   });
 
   it("should return who won a game when winner is passed in", function() {
@@ -140,7 +44,7 @@ describe("Winner", function() {
   });
 
   it("should return a players score by name", function() {
-    expect(game.getScore("Bob")).toBe(110);
+    expect(game.getScore("Bob").getTotalPoints()).toBe(110);
   });
 
   it("should throw an error when trying to find a players score that isn't playing", function() {
@@ -197,8 +101,6 @@ describe("Winner", function() {
   it("should return number of players", function() {
     expect(game.numPlayers()).toBe(3);
   });
-
-
 });
 
 describe("Game Logs", function() {
@@ -241,52 +143,6 @@ describe("Game Logs", function() {
   });
 });
 
-var Score = function(options) {
-  this.options = $.extend({
-  }, options);
-  this.getTotalPoints = function() {
-    if(this.options.data) {
-      return calculateTotal.call(this);
-    }
-    return 0;
-  }
-
-  this.getPointsByTurn = function(turn) {
-    if(this.options.data == undefined) {
-      throw new Error("The game has not started yet.");
-    }
-    if(this.options.data[turn] == undefined) {
-      throw new Error("That turn has not been played yet.");
-    }
-    return calculateTotal.call(this, turn);
-  }
-
-  function calculateTotal(turn) {
-    var total = 0;
-    var strike = false;
-    var spare = false;
-    if(turn == undefined) {
-      turn = this.options.data.length;
-    }
-
-    for(var i = 0; i < turn; i++) {
-      total += this.options.data[i].getTotal();
-      if(strike) {
-        total += this.options.data[i].getTotal();
-        strike = false;
-      }else if(spare) {
-        total += this.options.data[i].firstRoll;
-        spare = false;
-      }
-      if(this.options.data[i].firstRoll == 10) {
-        strike = true;
-      }else if(this.options.data[i].firstRoll + this.options.data[i].secondRoll == 10) {
-        spare = true;
-      }
-    }
-    return total;
-  }
-}
 
 describe("Score", function() {
   var player1;
@@ -317,7 +173,7 @@ describe("Score", function() {
   describe("in progress", function() {
 
     it("should throw an error when try to get the score from a turn that hasn't been played yet", function() {
-      expect( function() { inProgressScore.getPointsByTurn(6) }).toThrowError("That turn has not been played yet.");
+      expect( function() { inProgressScore.getPointsByTurn(7) }).toThrowError("That turn has not been played yet.");
     });
 
     it("should get total from in progress existing score", function() {
@@ -331,55 +187,24 @@ describe("Score", function() {
       expect(completedScore.getTotalPoints()).toBe(110);
     });
 
+    it("should getTotalPoints() === getPointsByTurn(10)", function() {
+      expect(completedScore.getPointsByTurn(10)).toBe(110);
+    });
+
     it("should get the score from the 5th turn on an existing score", function() {
       expect(completedScore.getPointsByTurn(5)).toBe(51);
+    });
+
+    it("should get the score from a turn with strike which includes bonus", function() {
+      expect(completedScore.getPointsByTurn(3)).toBe(49);
+    });
+
+    it("should get the array of turns", function() {
+      expect(completedScore.getTurns().length).toBe(10);
     });
   });
 });
 
-
-function Turn(firstRoll, secondRoll, options) {
-  this.options = $.extend({
-  }, options);
-  this.firstRoll = firstRoll;
-  this.secondRoll = secondRoll;
-
-  this.setRolls = function(first, second) {
-    if(first != undefined) {
-      this.setFirstRoll(first);
-    }
-    if(second != undefined) {
-      this.setSecondRoll(second);
-    }
-  }
-
-  this.setFirstRoll = function(points) {
-    if(points < 0 || points > 10) {
-      throw new Error("Invalid # of pins knocked");
-    }
-    this.firstRoll = points;
-  }
-
-  this.setSecondRoll = function(points) {
-    if(this.firstRoll == undefined) {
-      throw new Error("Must make first roll before second roll.");
-    }
-    if(this.firstRoll == 10) {
-      throw new Error("Can't make second roll - first was a strike");
-    }
-    if(points < 0 || points > (10 - this.firstRoll)) {
-      throw new Error("Invalid # of pins knocked");
-    }
-    this.secondRoll = points; 
-  }
-
-  this.getTotal = function() {
-    if(this.firstRoll == undefined) {
-      throw new Error("No rolls have been made for this turn.")
-    }
-    return this.firstRoll + this.secondRoll || this.firstRoll;
-  }
-}
 
 describe("Turn", function() {
   var turn;
@@ -469,3 +294,79 @@ describe("Turn", function() {
     });
   });
 });
+
+describe("Html", function() {
+  var game;
+  var player1;
+  var player2;
+  beforeEach(function() {
+    setFixtures('<button class="add"></button><div class="scores"></div><div class="winner"></div>');
+    player1 = new Player("Bob");
+    player2 = new Player("Steve");
+    game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
+
+    $("button.add").on("click", onClick);
+  });
+
+  it("jasmine-jquery should work", function() {
+    expect($('button')).toBeInDOM();
+  });
+
+  describe("playthrough of match scores", function() {
+
+    it("should show players names", function() {
+      displayPlayerNames(game);
+      expect($(".scores")).toContainText("Bob");
+      expect($(".scores")).toContainText("Steve");
+    });
+
+    it("should show the players first turn score", function() {
+      playGame(game);
+      displayFirstTurn(game);
+      var players = game.getPlayers();
+      expect($(".turn.turn1")).toContainText(players[0].score.getPointsByTurn(1));
+      expect($(".turn.turn1")).toContainText(players[1].score.getPointsByTurn(1));
+    });
+
+    it("should show the players first turn roll points", function() {
+      playGame(game);
+      displayFirstTurn(game);
+      var players = game.getPlayers();
+      expect($(".turn.turn1")).toContainText(players[0].score.getTurns()[0].firstRoll);
+      expect($(".turn.turn1")).toContainText(players[0].score.getTurns()[0].secondRoll);
+      expect($(".turn.turn1")).toContainText(players[1].score.getTurns()[0].firstRoll);
+      expect($(".turn.turn1")).toContainText(players[1].score.getTurns()[0].secondRoll);
+    });
+
+    it("should show the players final turn score", function() {
+      playGame(game);
+      displayFinalTurn(game);
+      var players = game.getPlayers();
+      expect($(".turn.turn10")).toContainText(players[0].score.getTotalPoints());
+      expect($(".turn.turn10")).toContainText(players[1].score.getTotalPoints());
+    });
+
+    it("should show scores for all turns of a player", function() {
+      playGame(game);
+      displayTurns(game);
+      var players = game.getPlayers();
+      expect($(".turn.turn1")).toContainText(players[0].score.getPointsByTurn(1));
+      expect($(".turn.turn2")).toContainText(players[0].score.getPointsByTurn(2));
+      expect($(".turn.turn3")).toContainText(players[0].score.getPointsByTurn(3));
+      expect($(".turn.turn4")).toContainText(players[0].score.getPointsByTurn(4));
+      expect($(".turn.turn5")).toContainText(players[0].score.getPointsByTurn(5));
+      expect($(".turn.turn6")).toContainText(players[0].score.getPointsByTurn(6));
+      expect($(".turn.turn7")).toContainText(players[0].score.getPointsByTurn(7));
+      expect($(".turn.turn8")).toContainText(players[0].score.getPointsByTurn(8));
+      expect($(".turn.turn9")).toContainText(players[0].score.getPointsByTurn(9));
+      expect($(".turn.turn10")).toContainText(players[0].score.getPointsByTurn(10));
+    });
+
+    it("should show the winners name", function() {
+      playGame(game);
+      displayWinnerName(game);
+      expect($(".winner")).toContainText(game.getWinner().name);
+    });
+  });
+});
+

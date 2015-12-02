@@ -14,6 +14,9 @@ function Game(options) {
     return this.options.winner || calculateWinner.call(this);
   }
 
+  this.getPlayers = function() {
+    return this.options.players;
+  }
   this.getPlayer = function(i) {
     return this.options.players[i].player;
   }
@@ -24,7 +27,7 @@ function Game(options) {
     }
     var winner = this.options.players[0];
     for(var i = 0; i < this.options.players.length; i++) {
-      if(this.options.players[i].score  > winner.score ) {
+      if(this.options.players[i].score.getTotalPoints()  > winner.score.getTotalPoints() ) {
         winner = this.options.players[i];
       }
     }
@@ -44,7 +47,7 @@ function Game(options) {
 
   this.getRanking = function(rank) {
     this.options.players.sort(function(a, b) {
-      return b.score - a.score;
+      return b.score.getTotalPoints() - a.score.getTotalPoints();
     });
     return this.options.players[rank].player;
   }
@@ -97,15 +100,195 @@ function GameLogs() {
 
 }
 
+var Score = function(options) {
+  this.options = $.extend({
+  }, options);
+  this.getTotalPoints = function() {
+    if(this.options.data) {
+      return calculateTotal.call(this);
+    }
+    return 0;
+  }
+
+  this.getPointsByTurn = function(numTurnForTotal) {
+    if(this.options.data == undefined) {
+      throw new Error("The game has not started yet.");
+    }
+    if(this.options.data[numTurnForTotal - 1] == undefined) {
+      throw new Error("That turn has not been played yet.");
+    }
+    return calculateTotal.call(this, numTurnForTotal);
+  }
+
+  this.getTurns = function() {
+    return this.options.data;
+  }
+
+  function calculateTotal(numTurnForTotal) {
+    var total = 0;
+    var turns = this.options.data;
+    var turn, lastTurn;
+    
+    if(numTurnForTotal == undefined) {
+      numTurnForTotal = turns.length;
+    }
+
+    if(turns[numTurnForTotal - 1].getTotal() == 10 && turns[numTurnForTotal] != undefined) {
+      numTurnForTotal += 1;
+    }
+
+    for(var i = 0; i < numTurnForTotal; i++) {
+      turn = turns[i];
+      total += turn.getTotal();
+
+      if(isStrike(lastTurn)) {
+        total += turn.getTotal();
+      }else if(isSpare(lastTurn)) {
+        total += turn.firstRoll;
+      }
+
+      lastTurn = turn;
+    }
+    return total;
+  }
+
+  function isStrike(turn) {
+    if(turn && turn.firstRoll == 10) {
+      return true;
+    }
+    return false;
+  }
+
+  function isSpare(turn) {
+    if(turn && turn.firstRoll != 10 && turn.getTotal() == 10) {
+      return true;
+    }
+    return false;
+  }
+
+}
+
+
+function Turn(firstRoll, secondRoll, options) {
+  this.options = $.extend({
+  }, options);
+  this.firstRoll = firstRoll;
+  this.secondRoll = secondRoll;
+
+  this.setRolls = function(first, second) {
+    if(first != undefined) {
+      this.setFirstRoll(first);
+    }
+    if(second != undefined) {
+      this.setSecondRoll(second);
+    }
+  }
+
+  this.setFirstRoll = function(points) {
+    if(points < 0 || points > 10) {
+      throw new Error("Invalid # of pins knocked");
+    }
+    this.firstRoll = points;
+  }
+
+  this.setSecondRoll = function(points) {
+    if(this.firstRoll == undefined) {
+      throw new Error("Must make first roll before second roll.");
+    }
+    if(this.firstRoll == 10) {
+      throw new Error("Can't make second roll - first was a strike");
+    }
+    if(points < 0 || points > (10 - this.firstRoll)) {
+      throw new Error("Invalid # of pins knocked");
+    }
+    this.secondRoll = points; 
+  }
+
+  this.getTotal = function() {
+    if(this.firstRoll == undefined) {
+      throw new Error("No rolls have been made for this turn.")
+    }
+    return this.firstRoll + this.secondRoll || this.firstRoll;
+  }
+}
+
 player1 = new Player("Bob");
 player2 = new Player("Steve");
-game = new Game({players: [{player: player1 , score: 10}, {player: player2, score: 5}]});
+game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function playGame(game) {
+  var firstRoll;
+  var turns;
+  var players = game.getPlayers();
+    for(var x = 0; x < players.length; x++) {
+      for(var i = 0; i < players[x].score.getTurns().length; i++) {
+        turns = players[x].score.getTurns();
+        firstRoll = getRandomInt(0,11);
+        turns[i].setFirstRoll(firstRoll);
+        if(firstRoll != 10) {
+          turns[i].setSecondRoll(getRandomInt(0, 11-firstRoll));
+        }
+      }
+   }
+}
+
+function displayPlayerNames(game) {
+  var players = game.getPlayers();
+  for(var i = 0; i < players.length; i++) { 
+      $(".scores").append("<p class='score'><span style='font-weight:bold;'>" + players[i].player.name + "</span> </p>");
+  }
+}
+
+function displayTurns(game) {
+  for(var i = 1; i <= 10; i++) { 
+    displayTurnByNum(game, i);
+  }
+}
+
+function displayFirstTurn(game) {
+  displayTurnByNum(game, 1);
+}
+
+function displayFinalTurn(game) {
+  displayTurnByNum(game, 10);
+}
+
+function displayTurnByNum(game, numTurn) {
+  var players = game.getPlayers();
+  var $elem = $("<div class='turn turn" + numTurn + "'</div>");
+  for(var i = 0; i < players.length; i++) { 
+    $elem.append(players[i].score.getPointsByTurn(numTurn));
+    $elem.append(players[i].score.getTurns()[numTurn - 1].firstRoll);
+    $elem.append(players[i].score.getTurns()[numTurn - 1].secondRoll);
+  }
+  $elem.appendTo($(".scores:last"));
+}
+
+function displayWinnerName(game) {
+   $(".winner").html("Winner: " + game.getWinner().name);
+}
+
+
+function onClick() {
+  var firstRoll;
+  var turns;
+  game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
+  displayPlayerNames(game);
+  playGame(game);
+  displayTurns(game);
+  displayWinnerName(game);
+}
 
 $(document).ready(function() {
   $(".players").append("<div>" + player1.name + " <input placeholder='score' /></div>")
   $(".players").append("<div>" + player2.name + " <input placeholder='score' /></div>")
+  $("button.add").on("click", onClick);
 
-  $("button").on("click", function() {
+  $("button.getWinner").on("click", function() {
     var game = new Game({players: [{player: player1 , score: parseInt($('input:first').val())}, {player: player2, score: parseInt($('input:last').val())}]});
     game.getWinner();
       $("body").append("<div style='font-weight:bold;margin-top:15px;'>" + game.getRanking(0).name + " " + game.getScore(game.getRanking(0).name) + "</div>");
