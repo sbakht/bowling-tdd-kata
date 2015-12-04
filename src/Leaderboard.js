@@ -99,7 +99,7 @@ function GameLogs() {
   }
 
 }
-
+var temp = 0;
 var Score = function(options) {
   this.options = $.extend({
   }, options);
@@ -220,10 +220,9 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-function playGame(game) {
+function playGame(players) {
   var firstRoll;
   var turns;
-  var players = game.getPlayers();
     for(var x = 0; x < players.length; x++) {
       for(var i = 0; i < players[x].score.getTurns().length; i++) {
         turns = players[x].score.getTurns();
@@ -236,40 +235,35 @@ function playGame(game) {
    }
 }
 
-function displayPlayerNames(game) {
-  var players = game.getPlayers();
-  for(var i = 0; i < players.length; i++) { 
-      $(".scores").append("<p class='score'><span style='font-weight:bold;'>" + players[i].player.name + "</span> </p>");
-  }
-}
-
-function displayTurns(game) {
-  for(var i = 1; i <= 10; i++) { 
-    displayTurnByNum(game, i);
-  }
-}
-
-function displayFirstTurn(game) {
-  displayTurnByNum(game, 1);
-}
-
-function displayFinalTurn(game) {
-  displayTurnByNum(game, 10);
-}
-
-function displayTurnByNum(game, numTurn) {
-  var players = game.getPlayers();
-  var $elem = $("<div class='turn turn" + numTurn + "'</div>");
-  for(var i = 0; i < players.length; i++) { 
-    $elem.append(players[i].score.getPointsByTurn(numTurn));
-    $elem.append(players[i].score.getTurns()[numTurn - 1].firstRoll);
-    $elem.append(players[i].score.getTurns()[numTurn - 1].secondRoll);
-  }
-  $elem.appendTo($(".scores:last"));
-}
-
 function displayWinnerName(game) {
    $(".winner").html("Winner: " + game.getWinner().name);
+}
+
+function PlayerView(player) {
+  this.player = player;
+
+  this.displayPlayerName = function() {
+      var $scores = $(".scores");
+      $scores.append("<p class='score'><span style='font-weight:bold;'>" + this.player.name + "</span> </p>");
+    }
+}
+
+function ScoreView(score) {
+  this.score = score;
+
+  this.displayTurns = function() {
+    for(var i = 1; i <= 10; i++) { 
+      this.displayTurnByNum(i);
+    }
+  }
+
+  this.displayTurnByNum = function(numTurn) {
+    var $elem = $("<div class='turn turn" + numTurn + "'</div>");
+    $elem.append(this.score.getPointsByTurn(numTurn));
+    $elem.append(this.score.getTurns()[numTurn - 1].firstRoll);
+    $elem.append(this.score.getTurns()[numTurn - 1].secondRoll);
+    $elem.appendTo($(".scores:last"));
+  }
 }
 
 
@@ -277,9 +271,10 @@ function onClick() {
   var firstRoll;
   var turns;
   game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
-  displayPlayerNames(game);
-  playGame(game);
-  displayTurns(game);
+  var players = game.getPlayers();
+  displayPlayerNames(players);
+  playGame(players);
+  displayTurns(players);
   displayWinnerName(game);
 }
 

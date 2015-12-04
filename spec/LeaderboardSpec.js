@@ -249,6 +249,7 @@ describe("Turn", function() {
       turn.setFirstRoll(10);
       expect(turn.getTotal()).toBe(10);
     });
+
   });
 
   describe("Error", function() {
@@ -278,6 +279,10 @@ describe("Turn", function() {
         expect(function() {turn.setSecondRoll(6) }).toThrowError("Invalid # of pins knocked");
       });
 
+      it("should throw error when try to get total when no roll was made", function() {
+        expect(function() { turn.getTotal() }).toThrowError('No rolls have been made for this turn.');
+      });
+
     });
 
     it("should throw error if try to add second roll without first roll", function() {
@@ -289,9 +294,6 @@ describe("Turn", function() {
       expect(function() {turn.setSecondRoll(5) }).toThrowError("Can't make second roll - first was a strike");
     });
 
-    it("should throw error if try to get total when no roll was made", function() {
-      expect(function() {turn.getTotal() }).toThrowError("No rolls have been made for this turn.");
-    });
   });
 });
 
@@ -312,44 +314,66 @@ describe("Html", function() {
     expect($('button')).toBeInDOM();
   });
 
-  describe("playthrough of match scores", function() {
+  describe("after playthrough of match", function() {
 
     it("should show players names", function() {
-      displayPlayerNames(game);
+      var players = game.getPlayers();
+      var playerView1 = new PlayerView(players[0].player);
+      var playerView2 = new PlayerView(players[1].player);
+      playerView1.displayPlayerName();
+      playerView2.displayPlayerName();
       expect($(".scores")).toContainText("Bob");
       expect($(".scores")).toContainText("Steve");
     });
 
     it("should show the players first turn score", function() {
-      playGame(game);
-      displayFirstTurn(game);
+      var game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(5,0), new Turn(5,5), new Turn(10,0), new Turn(5,2), new Turn(1,1), new Turn(3,6), new Turn(2,2), new Turn(10,0), new Turn(9,1), new Turn(8,0)]} )}, {player: player2, score: new Score({data : [new Turn(10,0), new Turn(5,5), new Turn(10,0), new Turn(5,2), new Turn(1,1), new Turn(3,6), new Turn(2,2), new Turn(10,0), new Turn(9,1), new Turn(8,0)]}) } ]});
       var players = game.getPlayers();
-      expect($(".turn.turn1")).toContainText(players[0].score.getPointsByTurn(1));
-      expect($(".turn.turn1")).toContainText(players[1].score.getPointsByTurn(1));
+      var scoreView1 = new ScoreView(players[0].score);
+      var scoreView2 = new ScoreView(players[1].score);
+      scoreView1.displayTurnByNum(1);
+      scoreView2.displayTurnByNum(1);
+      expect($(".turn.turn1")).toContainText(5);
+      expect($(".turn.turn1")).toContainText(30);
+    });
+
+    it("should throw error when try to display total for a roll that is strike when next roll hasn't been done", function() {
+      var score = new Score({ data: [new Turn(10), new Turn()]});
+      var scoreView = new ScoreView(score);
+      expect(function() { scoreView.displayTurnByNum(1) }).toThrowError('No rolls have been made for this turn.');
     });
 
     it("should show the players first turn roll points", function() {
-      playGame(game);
-      displayFirstTurn(game);
+      var game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(5,0), new Turn(5,5), new Turn(10,0), new Turn(5,2), new Turn(1,1), new Turn(3,6), new Turn(2,2), new Turn(10,0), new Turn(9,1), new Turn(8,0)]} )}, {player: player2, score: new Score({data : [new Turn(10,0), new Turn(5,5), new Turn(10,0), new Turn(5,2), new Turn(1,1), new Turn(3,6), new Turn(2,2), new Turn(10,0), new Turn(9,1), new Turn(8,0)]}) } ]});
       var players = game.getPlayers();
-      expect($(".turn.turn1")).toContainText(players[0].score.getTurns()[0].firstRoll);
-      expect($(".turn.turn1")).toContainText(players[0].score.getTurns()[0].secondRoll);
-      expect($(".turn.turn1")).toContainText(players[1].score.getTurns()[0].firstRoll);
-      expect($(".turn.turn1")).toContainText(players[1].score.getTurns()[0].secondRoll);
+      var scoreView1 = new ScoreView(players[0].score);
+      var scoreView2 = new ScoreView(players[1].score);
+      scoreView1.displayTurnByNum(1);
+      scoreView2.displayTurnByNum(1);
+      expect($(".turn.turn1")).toContainText(5);
+      expect($(".turn.turn1")).toContainText(0);
+      expect($(".turn.turn1")).toContainText(10);
+      expect($(".turn.turn1")).not.toContainText('undefined');
     });
 
     it("should show the players final turn score", function() {
-      playGame(game);
-      displayFinalTurn(game);
       var players = game.getPlayers();
+      playGame(players);
+      var scoreView1 = new ScoreView(players[0].score);
+      var scoreView2 = new ScoreView(players[1].score);
+      scoreView1.displayTurnByNum(10);
+      scoreView2.displayTurnByNum(10);
       expect($(".turn.turn10")).toContainText(players[0].score.getTotalPoints());
       expect($(".turn.turn10")).toContainText(players[1].score.getTotalPoints());
     });
 
     it("should show scores for all turns of a player", function() {
-      playGame(game);
-      displayTurns(game);
       var players = game.getPlayers();
+      playGame(players);
+      var scoreView1 = new ScoreView(players[0].score);
+      var scoreView2 = new ScoreView(players[1].score);
+      scoreView1.displayTurns();
+      scoreView2.displayTurns();
       expect($(".turn.turn1")).toContainText(players[0].score.getPointsByTurn(1));
       expect($(".turn.turn2")).toContainText(players[0].score.getPointsByTurn(2));
       expect($(".turn.turn3")).toContainText(players[0].score.getPointsByTurn(3));
@@ -363,7 +387,8 @@ describe("Html", function() {
     });
 
     it("should show the winners name", function() {
-      playGame(game);
+      var players = game.getPlayers();
+      playGame(players);
       displayWinnerName(game);
       expect($(".winner")).toContainText(game.getWinner().name);
     });
