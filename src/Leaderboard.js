@@ -103,6 +103,7 @@ var temp = 0;
 var Score = function(options) {
   this.options = $.extend({
   }, options);
+
   this.getTotalPoints = function() {
     if(this.options.data) {
       return calculateTotal.call(this);
@@ -128,13 +129,14 @@ var Score = function(options) {
     var total = 0;
     var turns = this.options.data;
     var turn, lastTurn;
+    var addNextTurn = false;
     
     if(numTurnForTotal == undefined) {
       numTurnForTotal = turns.length;
     }
 
     if(turns[numTurnForTotal - 1].getTotal() == 10 && turns[numTurnForTotal] != undefined) {
-      numTurnForTotal += 1;
+      addNextTurn = true;
     }
 
     for(var i = 0; i < numTurnForTotal; i++) {
@@ -149,6 +151,18 @@ var Score = function(options) {
 
       lastTurn = turn;
     }
+
+    if(addNextTurn) {
+      
+      if(isStrike(lastTurn)) {
+        total += turns[numTurnForTotal].getTotal();
+      }else if(isSpare(lastTurn)) {
+        total += turns[numTurnForTotal].firstRoll;
+      }else{
+        throw new Error("Last turn must of been a strike or spare");
+      }
+    }
+
     return total;
   }
 
@@ -212,9 +226,6 @@ function Turn(firstRoll, secondRoll, options) {
   }
 }
 
-player1 = new Player("Bob");
-player2 = new Player("Steve");
-game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
@@ -259,9 +270,9 @@ function ScoreView(score) {
 
   this.displayTurnByNum = function(numTurn) {
     var $elem = $("<div class='turn turn" + numTurn + "'</div>");
-    $elem.append(this.score.getPointsByTurn(numTurn));
-    $elem.append(this.score.getTurns()[numTurn - 1].firstRoll);
-    $elem.append(this.score.getTurns()[numTurn - 1].secondRoll);
+    $elem.append("Total: " + this.score.getPointsByTurn(numTurn));
+    $elem.append(" First: " + this.score.getTurns()[numTurn - 1].firstRoll);
+    $elem.append(" Second: " + this.score.getTurns()[numTurn - 1].secondRoll);
     $elem.appendTo($(".scores:last"));
   }
 }
@@ -269,24 +280,24 @@ function ScoreView(score) {
 
 function onClick() {
   var firstRoll;
-  var turns;
+  var turns, playerView, scoreView;
+  var player1 = new Player("Bob");
+  var player2 = new Player("Steve");
+
+  $(".scores").html('');
   game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
   var players = game.getPlayers();
-  displayPlayerNames(players);
   playGame(players);
-  displayTurns(players);
+
+  for(var i = 0; i < players.length; i++) {
+    playerView = new PlayerView(players[i].player);
+    scoreView = new ScoreView(players[i].score);
+    playerView.displayPlayerName();
+    scoreView.displayTurns();
+  }
   displayWinnerName(game);
 }
 
 $(document).ready(function() {
-  $(".players").append("<div>" + player1.name + " <input placeholder='score' /></div>")
-  $(".players").append("<div>" + player2.name + " <input placeholder='score' /></div>")
   $("button.add").on("click", onClick);
-
-  $("button.getWinner").on("click", function() {
-    var game = new Game({players: [{player: player1 , score: parseInt($('input:first').val())}, {player: player2, score: parseInt($('input:last').val())}]});
-    game.getWinner();
-      $("body").append("<div style='font-weight:bold;margin-top:15px;'>" + game.getRanking(0).name + " " + game.getScore(game.getRanking(0).name) + "</div>");
-      $("body").append("<div>" + game.getRanking(1).name + " " + game.getScore(game.getRanking(1).name) + "</div>");
-  })
 });

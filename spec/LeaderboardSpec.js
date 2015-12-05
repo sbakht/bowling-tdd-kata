@@ -158,6 +158,27 @@ describe("Score", function() {
     completedScore = new Score({ data: [new Turn(5,0), new Turn(5,5), new Turn(10,0), new Turn(5,2), new Turn(1,1), new Turn(3,6), new Turn(2,2), new Turn(10,0), new Turn(9,1), new Turn(8,0)]});
   });
 
+
+    it("should get total points when last rolled is strike", function() {
+      var score = new Score({data : [new Turn(10), new Turn(2,7)]})
+      expect(score.getTotalPoints()).toBe(28);
+    });
+
+    it("should get total points when last rolled is spare", function() {
+      var score = new Score({data : [new Turn(5,5), new Turn(2,7)]})
+      expect(score.getTotalPoints()).toBe(21);
+    });
+
+    it("should get total points by roll num when is strike", function() {
+      var score = new Score({data : [new Turn(10), new Turn(2,7)]})
+      expect(score.getPointsByTurn(1)).toBe(19);
+    });
+
+    it("should get total points by roll num when is spare", function() {
+      var score = new Score({data : [new Turn(5,5), new Turn(2,7)]})
+      expect(score.getPointsByTurn(1)).toBe(12);
+    });
+
   describe("new", function() {
 
 
@@ -196,7 +217,7 @@ describe("Score", function() {
     });
 
     it("should get the score from a turn with strike which includes bonus", function() {
-      expect(completedScore.getPointsByTurn(3)).toBe(49);
+      expect(completedScore.getPointsByTurn(3)).toBe(42);
     });
 
     it("should get the array of turns", function() {
@@ -334,7 +355,7 @@ describe("Html", function() {
       scoreView1.displayTurnByNum(1);
       scoreView2.displayTurnByNum(1);
       expect($(".turn.turn1")).toContainText(5);
-      expect($(".turn.turn1")).toContainText(30);
+      expect($(".turn.turn1")).toContainText(20);
     });
 
     it("should throw error when try to display total for a roll that is strike when next roll hasn't been done", function() {
