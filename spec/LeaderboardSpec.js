@@ -371,10 +371,30 @@ describe("Html", function() {
       var scoreView2 = new ScoreView(players[1].score);
       scoreView1.displayTurnByNum(1);
       scoreView2.displayTurnByNum(1);
-      expect($(".turn.turn1")).toContainText(5);
-      expect($(".turn.turn1")).toContainText(0);
-      expect($(".turn.turn1")).toContainText(10);
-      expect($(".turn.turn1")).not.toContainText('undefined');
+      expect($(".turn.turn1:first .roll1")).toHaveText(5);
+      expect($(".turn.turn1:last .roll1")).toHaveText("X");
+      expect($(".turn.turn1:last .roll2")).toHaveText("");
+    });
+
+    it("should show X in roll 1 slot when strike", function() {
+      var score = new Score({data: [new Turn(10)]});
+      var scoreView = new ScoreView(score);
+      scoreView.displayTurnByNum(1);
+      expect($(".turn.turn1 .roll1")).toHaveText('X');
+    });
+
+    it("should show nothing in roll 2 slot when strike", function() {
+      var score = new Score({data: [new Turn(10)]});
+      var scoreView = new ScoreView(score);
+      scoreView.displayTurnByNum(1);
+      expect($(".turn.turn1 .roll2")).toHaveText('');
+    });
+
+    it("should show / in roll 2 slot when spare", function() {
+      var score = new Score({data: [new Turn(5,5)]});
+      var scoreView = new ScoreView(score);
+      scoreView.displayTurnByNum(1);
+      expect($(".turn.turn1 .roll2")).toHaveText('/');
     });
 
     it("should show the players final turn score", function() {

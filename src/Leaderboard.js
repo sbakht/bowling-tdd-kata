@@ -153,7 +153,7 @@ var Score = function(options) {
     }
 
     if(addNextTurn) {
-      
+
       if(isStrike(lastTurn)) {
         total += turns[numTurnForTotal].getTotal();
       }else if(isSpare(lastTurn)) {
@@ -270,9 +270,18 @@ function ScoreView(score) {
 
   this.displayTurnByNum = function(numTurn) {
     var $elem = $("<div class='turn turn" + numTurn + "'</div>");
-    $elem.append("Total: " + this.score.getPointsByTurn(numTurn));
-    $elem.append(" First: " + this.score.getTurns()[numTurn - 1].firstRoll);
-    $elem.append(" Second: " + this.score.getTurns()[numTurn - 1].secondRoll);
+    if(this.score.getTurns()[numTurn - 1].firstRoll === 10) {
+      $elem.append("<div class='roll1 strike'>X</div>");
+    }else{
+      $elem.append("<div class='roll1'>" + this.score.getTurns()[numTurn - 1].firstRoll + "</div>");
+      if(this.score.getTurns()[numTurn - 1].getTotal() === 10) {
+        $elem.append("<div class='roll2'>/</div>");
+      }else{
+        $elem.append("<div class='roll2'>" + this.score.getTurns()[numTurn - 1].secondRoll + "</div>");
+      }
+    }
+
+    $elem.append("<div class='total'>" + this.score.getPointsByTurn(numTurn) + "</div>");
     $elem.appendTo($(".scores:last"));
   }
 }

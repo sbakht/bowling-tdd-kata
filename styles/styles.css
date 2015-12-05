@@ -1,0 +1,36 @@
+.scores{
+  width:100%;
+}
+
+.turn {
+  border:1px black solid;
+  display:inline-block;
+  width:6%;
+}
+
+.roll1 {
+  display:inline-block;
+  padding:2px 0px 2px 0px;
+  margin-left:25%;
+}
+
+.roll1.strike {
+  width: 100%;
+  text-align: center;
+  margin:0;
+}
+
+.roll2 {
+  border-left: 1px black solid;
+   border-bottom: 1px solid black;
+  float:right;
+  padding:2px 5px 2px 5px;
+  display:inline-block;
+}
+
+.total {
+  text-align:center;
+  font-size:18px;
+  color:green;
+  font-weight:bold;
+}
