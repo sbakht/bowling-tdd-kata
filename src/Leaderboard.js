@@ -99,6 +99,26 @@ function GameLogs() {
   }
 
 }
+
+function PlayerLogs() {
+  this.players = [];
+
+  this.add = function(player) {
+    this.players.push(player);
+  }
+
+  this.numPlayers = function() {
+    return this.players.length;
+  } 
+
+  this.getSortedByWins = function() {
+    this.players.sort(function(a, b) {
+      return b.wins - a.wins;
+    });
+    return this.players;
+  }
+}
+
 var temp = 0;
 var Score = function(options) {
   this.options = $.extend({
@@ -143,10 +163,12 @@ var Score = function(options) {
       turn = turns[i];
       total += turn.getTotal();
 
-      if(isStrike(lastTurn)) {
-        total += turn.getTotal();
-      }else if(isSpare(lastTurn)) {
-        total += turn.firstRoll;
+      if(lastTurn) {
+        if(lastTurn.isStrike()) {
+          total += turn.getTotal();
+        }else if(lastTurn.isSpare()) {
+          total += turn.firstRoll;
+        }
       }
 
       lastTurn = turn;
@@ -154,9 +176,9 @@ var Score = function(options) {
 
     if(addNextTurn) {
 
-      if(isStrike(lastTurn)) {
+      if(lastTurn.isStrike()) {
         total += turns[numTurnForTotal].getTotal();
-      }else if(isSpare(lastTurn)) {
+      }else if(lastTurn.isSpare()) {
         total += turns[numTurnForTotal].firstRoll;
       }else{
         throw new Error("Last turn must of been a strike or spare");
@@ -164,20 +186,6 @@ var Score = function(options) {
     }
 
     return total;
-  }
-
-  function isStrike(turn) {
-    if(turn && turn.firstRoll == 10) {
-      return true;
-    }
-    return false;
-  }
-
-  function isSpare(turn) {
-    if(turn && turn.firstRoll != 10 && turn.getTotal() == 10) {
-      return true;
-    }
-    return false;
   }
 
 }
@@ -224,6 +232,21 @@ function Turn(firstRoll, secondRoll, options) {
     }
     return this.firstRoll + this.secondRoll || this.firstRoll;
   }
+
+  this.isStrike = function(){
+    if(this.firstRoll == 10) {
+      return true;
+    }
+    return false;
+  }
+    this.isSpare = function() {
+    if(this.firstRoll != 10 && this.getTotal() == 10) {
+      return true;
+    }
+    return false;
+  }
+
+
 }
 
 
@@ -287,14 +310,18 @@ function ScoreView(score) {
 }
 
 
+var player1 = new Player("Bob");
+var player2 = new Player("Steve");
+var playerLogs = new PlayerLogs();
+playerLogs.add(player1);
+playerLogs.add(player2);
+
 function onClick() {
   var firstRoll;
   var turns, playerView, scoreView;
-  var player1 = new Player("Bob");
-  var player2 = new Player("Steve");
+  var game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
 
   $(".scores").html('');
-  game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
   var players = game.getPlayers();
   playGame(players);
 
@@ -305,6 +332,13 @@ function onClick() {
     scoreView.displayTurns();
   }
   displayWinnerName(game);
+
+  var playersByWins = playerLogs.getSortedByWins();
+  $(".player-rankings").html('');
+  $(".player-rankings").append("<tr><th>Rank</th><th>Name</th><th>Wins</th></tr>");
+  for(var i = 0; i < playersByWins.length; i++) {
+    $(".player-rankings").append("<tr><td>" + (i + 1) + "</td><th>" + playersByWins[i].name +"</th><th>" + playersByWins[i].wins + "</th></tr>");
+  }
 }
 
 $(document).ready(function() {
