@@ -312,13 +312,23 @@ function ScoreView(score) {
 
 var player1 = new Player("Bob");
 var player2 = new Player("Steve");
+var player3 = new Player("Sam");
+var player4 = new Player("Emily");
+var player5 = new Player("Handy");
+var player6 = new Player("Lucky");
 var playerLogs = new PlayerLogs();
 playerLogs.add(player1);
 playerLogs.add(player2);
+playerLogs.add(player3);
+playerLogs.add(player4);
+playerLogs.add(player5);
+playerLogs.add(player6);
 
 function onClick() {
   var firstRoll;
   var turns, playerView, scoreView;
+  var player1 = playerLogs.players[getRandomInt(0, playerLogs.players.length)];
+  var player2 = playerLogs.players[getRandomInt(0, playerLogs.players.length)]; //Player can currently play against himself
   var game = new Game({players: [{player: player1 , score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]} )}, {player: player2, score: new Score({data : [new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn(), new Turn() ]}) } ]});
 
   $(".scores").html('');
